@@ -9,7 +9,7 @@
  *              (note: under Ubuntu-, Debian-Linux: package libssl-dev must be installed)
  * author   : Jochen Ertel
  * created  : 16.09.2016
- * updated  : 23.01.2017
+ * updated  : 22.04.2017
  *
  **************************************************************************************************/
 
@@ -22,9 +22,9 @@
 #include <openssl/hmac.h>
 
 
-#define VERSION "xorcrypt - file encryption tool developed by Jochen Ertel (version 0.9.9)"
+#define VERSION "xorcrypt - file encryption tool developed by Jochen Ertel (version 1.0.0)"
 
-#define PBKDF2_ROUND_NUMBER  500000
+#define PBKDF2_ROUND_NUMBER  1000000
 
 
 
@@ -136,7 +136,7 @@ void pbkdf2 (unsigned char *salt, size_t slen, char *pwd, size_t rounds, unsigne
       error_and_exit ("invalid password (contains non-ascii characters)");
   }
 
-  plen++; /* note: extend password string always by 0x00 (marker of string end) 
+  plen++; /* note: extend password string always by 0x00 (marker of string end)
                   -> this has no influence to pbkdf2 because password string
                      is always padded with 0x00 bytes to total size of 64 byte
                      inside HMAC algorithm (password is used as HMAC-key) */
@@ -176,7 +176,7 @@ void pbkdf2 (unsigned char *salt, size_t slen, char *pwd, size_t rounds, unsigne
 
 unsigned char st_aes_key[32] =    {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
                                    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-                                   0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 
+                                   0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
                                    0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
 
 unsigned char st_aes_plain[16] =  {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
@@ -185,7 +185,7 @@ unsigned char st_aes_plain[16] =  {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x7
 unsigned char st_aes_cipher[16] = {0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
                                    0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89};
 
-unsigned char st_hmac_key[32] =   {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 
+unsigned char st_hmac_key[32] =   {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
                                    0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
                                    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
                                    0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f};
@@ -210,7 +210,7 @@ int main (int argc, char *argv[])
   size_t i, ib, len1, len2, sizein;
   int mode, istdin, istdout, chint, chk, verbose, st_r1, st_r2;
   long ti, ti_st, scnt_pre, scnt_mb;
-  unsigned char enc_key[32], auth_key[32], irandom[32], counter[16], enc_counter[16], readin[16], inbuf[32], 
+  unsigned char enc_key[32], auth_key[32], irandom[32], counter[16], enc_counter[16], readin[16], inbuf[32],
                 encdec_readin[16], icv[32], st_temp[32], *retc;
   char timestring[20], modestring[1024], randstring[1024], password[1024], fname_i[1024], fname_o[1024];
   AES_KEY enc_key_aes;
@@ -234,8 +234,8 @@ int main (int argc, char *argv[])
     printf ("     -> file encryption by AES256 in Counter Mode\n");
     printf ("     -> integrity protection of encrypted file by HMAC-SHA256\n");
     printf ("     -> AES and HMAC keys are derived from Password by PBKDF2 function (HMAC-SHA256 based):\n");
-    printf ("        - AES key  (256 bit) = PBKDF2 (Salt1, Password, 500.000 rounds)\n");
-    printf ("        - HMAC key (256 bit) = PBKDF2 (Salt2, Password, 500.000 rounds)\n");
+    printf ("        - AES key  (256 bit) = PBKDF2 (Salt1, Password, 1.000.000 rounds)\n");
+    printf ("        - HMAC key (256 bit) = PBKDF2 (Salt2, Password, 1.000.000 rounds)\n");
     printf ("     -> 32 byte random are derived by HMAC-SHA256 (unix-time, additional-random-string),\n");
     printf ("        random is used for:\n");
     printf ("        - Counter Mode IV (16 byte)\n");
@@ -271,7 +271,7 @@ int main (int argc, char *argv[])
       printf ("OK!\n");
     else
       printf ("FAILED!\n");
-   
+
     /* test of all used open-ssl hmac-sha256 functions */
     printf ("     -> HMAC-SHA256 self test: ");
     for (i=0; i < 32; i++) st_temp[i] = 0x00;
@@ -280,7 +280,7 @@ int main (int argc, char *argv[])
     for (i=0; i < 32; i++) {
       if (st_temp[i] != st_hmac_mac[i]) st_r2++;
     }
-  
+
     for (i=0; i < 32; i++) st_temp[i] = 0x00;
     HMAC_CTX_init (&ctx_hmac);
     HMAC_Init (&ctx_hmac, st_hmac_key, 32, EVP_sha256());
@@ -351,18 +351,18 @@ int main (int argc, char *argv[])
 
   /* additional-random-string *********/
   if (parGetString (argc, argv, 'r', randstring) != 1) {
-    randstring[0] = 'a';  
-    randstring[1] = 'b';  
-    randstring[2] = 'c';  
-    randstring[3] = 0x00;  
+    randstring[0] = 'a';
+    randstring[1] = 'b';
+    randstring[2] = 'c';
+    randstring[3] = 0x00;
   }
 
   /* verbose mode *********************/
   if (parArgTypExists (argc, argv, 'v') != 0) {
-    verbose = 1;  
+    verbose = 1;
   }
   else {
-    verbose = 0;  
+    verbose = 0;
   }
 
 
@@ -378,7 +378,7 @@ int main (int argc, char *argv[])
 
     len1 = strlen(timestring);
     len2 = strlen(randstring);
-    retc = HMAC(EVP_sha256(), (unsigned char*) timestring, (int) len1, (unsigned char*) randstring, 
+    retc = HMAC(EVP_sha256(), (unsigned char*) timestring, (int) len1, (unsigned char*) randstring,
                 (int) len2, irandom, NULL);
     if (retc == NULL)
       error_and_exit ("internal problem (openssl hmac error)");
@@ -410,7 +410,7 @@ int main (int argc, char *argv[])
   for (i=0; i < 16; i++) counter[i] = irandom[i];   /* copy iv */
 
   HMAC_Update (&ctx_hmac, irandom, 32); /* hash the 32 byte random at first */
-  
+
 
 
   /* do encryption/decryption *********************************************************************/
@@ -472,7 +472,7 @@ int main (int argc, char *argv[])
         /* encrypt/decrypt input chunk by xoring */
         for (i=0; i < sizein; i++) encdec_readin[i] = readin[i] ^ enc_counter[i];
       }
-      
+
       /* hash encrypted data */
       if (mode == 0) HMAC_Update (&ctx_hmac, encdec_readin, sizein);  /* encryption mode */
       if ((mode == 1) || (mode == 2)) HMAC_Update (&ctx_hmac, readin, sizein);  /* decryption/check mode */
@@ -481,7 +481,7 @@ int main (int argc, char *argv[])
         /* write encrypted/decrypted chunk to output file */
         for (i=0; i < sizein; i++) fputc (encdec_readin[i], fpw);
       }
-      
+
       /* write status to stderr */
       scnt_pre++;
       if (scnt_pre == 65536) {
@@ -493,7 +493,7 @@ int main (int argc, char *argv[])
       }
 
     } while (chint != EOF);
-    
+
     if (verbose) {
       ti = ((long) time(NULL)) - ti_st;
       fprintf (stderr, "\nxorcrypt: processing finnished");
@@ -502,8 +502,8 @@ int main (int argc, char *argv[])
       else
         fprintf (stderr, "\n");
     }
-    
-    
+
+
     /* finalise hashing by calculating icv */
     HMAC_Final (&ctx_hmac, icv, NULL); /* length of icv is always 32 byte */
     HMAC_CTX_cleanup (&ctx_hmac);
@@ -524,7 +524,7 @@ int main (int argc, char *argv[])
         else fprintf (stderr, "xorcrypt: integrity check FAILED!\n");
       }
     }
-    
+
   }
 
 
