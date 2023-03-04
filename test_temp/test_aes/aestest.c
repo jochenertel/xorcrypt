@@ -4,7 +4,7 @@
  * function : test of aes code against open ssl
  * author   : Jochen Ertel
  * created  : 20.01.2019
- * updated  : 20.01.2019
+ * updated  : 04.03.2023
  *
  **************************************************************************************************/
 
@@ -200,7 +200,7 @@ int main (int argc, char *argv[])
   printf ("-> run 1: encryption with 256 bit key (open ssl) -------------------\n");
 
   ti1 = (long) time(NULL); /* get unix-time in seconds */
-  printf ("run ssl hmac loop ...\n");
+  printf ("run ssl aes loop ...\n");
 
   AES_set_encrypt_key ((unsigned char *) key, 256, &ssl_key_aes);
   for (i=0; i < max; i++)
@@ -214,7 +214,7 @@ int main (int argc, char *argv[])
   printf ("-> run 2: encryption with 256 bit key (own code) -------------------\n");
 
   ti1 = (long) time(NULL); /* get unix-time in seconds */
-  printf ("run own hmac loop ...\n");
+  printf ("run own aes loop ...\n");
 
   aes_init (&ctx_own, key, 32);
   for (i=0; i < max; i++)

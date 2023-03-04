@@ -9,7 +9,7 @@
  *              (note: under Ubuntu-, Debian-Linux: package libssl-dev must be installed)
  * author   : Jochen Ertel
  * created  : 16.09.2016
- * updated  : 22.04.2017
+ * updated  : 03.03.2023
  *
  **************************************************************************************************/
 
@@ -22,7 +22,7 @@
 #include <openssl/hmac.h>
 
 
-#define VERSION "xorcrypt - file encryption tool developed by Jochen Ertel (version 1.0.0)"
+#define VERSION "xorcrypt - file encryption tool developed by Jochen Ertel (version 1.0.1)"
 
 #define PBKDF2_ROUND_NUMBER  1000000
 
@@ -214,7 +214,7 @@ int main (int argc, char *argv[])
                 encdec_readin[16], icv[32], st_temp[32], *retc;
   char timestring[20], modestring[1024], randstring[1024], password[1024], fname_i[1024], fname_o[1024];
   AES_KEY enc_key_aes;
-  HMAC_CTX ctx_hmac;
+  HMAC_CTX *ctx_hmac;
 
 
 
@@ -282,12 +282,12 @@ int main (int argc, char *argv[])
     }
 
     for (i=0; i < 32; i++) st_temp[i] = 0x00;
-    HMAC_CTX_init (&ctx_hmac);
-    HMAC_Init (&ctx_hmac, st_hmac_key, 32, EVP_sha256());
-    HMAC_Update (&ctx_hmac, &st_hmac_msg[0], 5);
-    HMAC_Update (&ctx_hmac, &st_hmac_msg[5], 3);
-    HMAC_Final (&ctx_hmac, st_temp, NULL);
-    HMAC_CTX_cleanup (&ctx_hmac);
+    ctx_hmac = HMAC_CTX_new();
+    HMAC_Init_ex (ctx_hmac, st_hmac_key, 32, EVP_sha256(), NULL);
+    HMAC_Update (ctx_hmac, &st_hmac_msg[0], 5);
+    HMAC_Update (ctx_hmac, &st_hmac_msg[5], 3);
+    HMAC_Final (ctx_hmac, st_temp, NULL);
+    HMAC_CTX_free (ctx_hmac);
     for (i=0; i < 32; i++) {
       if (st_temp[i] != st_hmac_mac[i]) st_r2++;
     }
@@ -405,11 +405,11 @@ int main (int argc, char *argv[])
     AES_set_encrypt_key (enc_key, 256, &enc_key_aes); /* openssl aes-key-expansion */
   }
   pbkdf2 (&irandom[24], 8, password, PBKDF2_ROUND_NUMBER, auth_key);
-  HMAC_CTX_init (&ctx_hmac);
-  HMAC_Init (&ctx_hmac, auth_key, 32, EVP_sha256()); /* openssl hmac initialisation */
+  ctx_hmac = HMAC_CTX_new();
+  HMAC_Init_ex (ctx_hmac, auth_key, 32, EVP_sha256(), NULL); /* openssl hmac initialisation */
   for (i=0; i < 16; i++) counter[i] = irandom[i];   /* copy iv */
 
-  HMAC_Update (&ctx_hmac, irandom, 32); /* hash the 32 byte random at first */
+  HMAC_Update (ctx_hmac, irandom, 32); /* hash the 32 byte random at first */
 
 
 
@@ -474,8 +474,8 @@ int main (int argc, char *argv[])
       }
 
       /* hash encrypted data */
-      if (mode == 0) HMAC_Update (&ctx_hmac, encdec_readin, sizein);  /* encryption mode */
-      if ((mode == 1) || (mode == 2)) HMAC_Update (&ctx_hmac, readin, sizein);  /* decryption/check mode */
+      if (mode == 0) HMAC_Update (ctx_hmac, encdec_readin, sizein);  /* encryption mode */
+      if ((mode == 1) || (mode == 2)) HMAC_Update (ctx_hmac, readin, sizein);  /* decryption/check mode */
 
       if (mode != 2) {
         /* write encrypted/decrypted chunk to output file */
@@ -505,8 +505,8 @@ int main (int argc, char *argv[])
 
 
     /* finalise hashing by calculating icv */
-    HMAC_Final (&ctx_hmac, icv, NULL); /* length of icv is always 32 byte */
-    HMAC_CTX_cleanup (&ctx_hmac);
+    HMAC_Final (ctx_hmac, icv, NULL); /* length of icv is always 32 byte */
+    HMAC_CTX_free (ctx_hmac);
 
     /* write icv to output file in encryption mode */
     if (mode == 0) {

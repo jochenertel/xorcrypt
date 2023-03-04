@@ -4,7 +4,7 @@
  * function : test of sha256 code against open ssl
  * author   : Jochen Ertel
  * created  : 12.12.2018
- * updated  : 20.01.2019
+ * updated  : 04.03.2023
  *
  **************************************************************************************************/
 
@@ -128,7 +128,7 @@ void print_bin (const char *name, uint32_t ind, uint32_t num, uint8_t *bytestrea
 
 int main (int argc, char *argv[])
 {
-  HMAC_CTX ctx_hmac; /* open SSL */
+  HMAC_CTX *ctx_hmac; /* open SSL */
   hmac_sha256_ctx_t ctx_own;
   shapar_t run[5];
   uint32_t i, max;
@@ -154,13 +154,13 @@ int main (int argc, char *argv[])
     get_random (da2, run[i].d2);
     get_random (da3, run[i].d3);
 
-    HMAC_CTX_init (&ctx_hmac);
-    HMAC_Init (&ctx_hmac, (unsigned char *) key, (size_t) run[i].k, EVP_sha256());
-    HMAC_Update (&ctx_hmac, (unsigned char *) da1, (size_t) run[i].d1);
-    HMAC_Update (&ctx_hmac, (unsigned char *) da2, (size_t) run[i].d2);
-    HMAC_Update (&ctx_hmac, (unsigned char *) da3, (size_t) run[i].d3);
-    HMAC_Final (&ctx_hmac, (unsigned char *) mac_ssl, NULL);
-    HMAC_CTX_cleanup (&ctx_hmac);
+    ctx_hmac = HMAC_CTX_new();
+    HMAC_Init_ex (ctx_hmac, (unsigned char *) key, (size_t) run[i].k, EVP_sha256(), NULL);
+    HMAC_Update (ctx_hmac, (unsigned char *) da1, (size_t) run[i].d1);
+    HMAC_Update (ctx_hmac, (unsigned char *) da2, (size_t) run[i].d2);
+    HMAC_Update (ctx_hmac, (unsigned char *) da3, (size_t) run[i].d3);
+    HMAC_Final (ctx_hmac, (unsigned char *) mac_ssl, NULL);
+    HMAC_CTX_free (ctx_hmac);
 
     hmac_sha256_init   (&ctx_own, key, (size_t) run[i].k);
     hmac_sha256_update (&ctx_own, da1, (size_t) run[i].d1);
@@ -191,12 +191,12 @@ int main (int argc, char *argv[])
   ti1 = (long) time(NULL); /* get unix-time in seconds */
   printf ("run ssl hmac loop ...\n");
 
-  HMAC_CTX_init (&ctx_hmac);
-  HMAC_Init (&ctx_hmac, (unsigned char *) key, (size_t) run[4].k, EVP_sha256());
+  ctx_hmac = HMAC_CTX_new();
+  HMAC_Init_ex (ctx_hmac, (unsigned char *) key, (size_t) run[4].k, EVP_sha256(), NULL);
   for (i=0; i < max; i++)
-    HMAC_Update (&ctx_hmac, (unsigned char *) da3, (size_t) run[4].d3);
-  HMAC_Final (&ctx_hmac, (unsigned char *) mac_ssl, NULL);
-  HMAC_CTX_cleanup (&ctx_hmac);
+    HMAC_Update (ctx_hmac, (unsigned char *) da3, (size_t) run[4].d3);
+  HMAC_Final (ctx_hmac, (unsigned char *) mac_ssl, NULL);
+  HMAC_CTX_free (ctx_hmac);
 
   ti2 = ((long) time(NULL)) - ti1; /* get unix-time difference in seconds */
   printf ("time: %u s\n", (unsigned int) ti2);
